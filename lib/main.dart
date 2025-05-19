@@ -16,6 +16,19 @@ class _ScannerScreenState extends State<ScannerScreen> {
   MobileScannerController? scannerController;
   String? scanResult;
 
+  // Step 1: Mock barcode data
+ final Map<String, Map<String, dynamic>> mockInventory = {
+  '8809294662039': {
+    'name': 'Korean Rice',
+    'quantity': 5,
+  },
+  '060383054458': {
+    'name': 'Orange Juice',
+    'quantity': 12,
+  },
+};
+
+
   @override
   void dispose() {
     scannerController?.dispose();
@@ -36,6 +49,45 @@ class _ScannerScreenState extends State<ScannerScreen> {
     });
   }
 
+  // Step 2: Show popup result
+ Future<void> _showScanResult(BuildContext context, String code) async {
+  if (mockInventory.containsKey(code)) {
+    final item = mockInventory[code]!;
+    final name = item['name'];
+    final qty = item['quantity'];
+
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Item Found'),
+        content: Text('Product: $name\nQuantity: $qty\nBarcode: $code'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  } else {
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Item Not Found'),
+        content: Text('Barcode: $code \nnot found in inventory.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -44,22 +96,28 @@ class _ScannerScreenState extends State<ScannerScreen> {
         children: [
           const Text('Scan a barcode / QR code'),
           const SizedBox(height: 20),
-
-          // Display scanner or button based on state
           if (isScannerActive) ...[
             SizedBox(
               height: 300,
               width: 300,
               child: MobileScanner(
                 controller: scannerController!,
-                onDetect: (capture) {
+                onDetect: (capture) async {
                   final List<Barcode> barcodes = capture.barcodes;
                   if (barcodes.isNotEmpty) {
                     final String code = barcodes.first.rawValue ?? 'Unknown';
-                    setState(() {
-                      scanResult = code;
-                    });
-                    print('Scanned: $code');
+                    if (code != scanResult) {
+                      setState(() {
+                        scanResult = code;
+                      });
+
+                      await scannerController?.stop(); // Pause scanning
+                      await _showScanResult(
+                        context,
+                        code,
+                      ); // Wait for dialog to close
+                      await scannerController?.start(); // Resume scanning
+                    }
                   }
                 },
               ),
@@ -67,7 +125,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             if (scanResult != null)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text('Scanned: $scanResult'),
+                child: Text('Last scanned: $scanResult'),
               ),
             ElevatedButton(
               onPressed: _toggleScanner,
