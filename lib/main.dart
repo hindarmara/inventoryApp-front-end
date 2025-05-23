@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'widget/bottom_navbar.dart'; // ← import your BottomNavBar
+import 'page/add_inventory.dart'; // ← add this
 
 void main() {
   runApp(const MyApp());
@@ -116,24 +117,32 @@ class _ScannerScreenState extends State<ScannerScreen> {
               ),
         );
       } else if (response.statusCode == 404) {
-        final bool? shouldAdd = await showDialog(
+        final bool? shouldAdd = await showDialog<bool>(
           context: context,
           builder:
               (_) => AlertDialog(
                 title: const Text('Item Not Found'),
-                content: Text('Barcode: $code not found in inventory. Would you like to add it?'),
+                content: Text(
+                  'Barcode: $code not found in inventory. Would you like to add it?',
+                ),
                 actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Yes'),
-                  ),
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
                     child: const Text('No'),
                   ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Yes'),
+                  ),
                 ],
               ),
         );
+        if (shouldAdd == true) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddInventoryPage(sku: code)),
+          );
+        }
       } else {
         throw Exception('Unexpected error: ${response.statusCode}');
       }
