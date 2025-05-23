@@ -22,9 +22,9 @@ class _BottomNavBarState extends State<BottomNavBar> {
       currentIndex: widget.currentIndex,
       onTap: widget.onTap,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.barcode), label: 'Scan'),
-        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Inventory'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'List'),
+        BottomNavigationBarItem(icon: Icon(Icons.barcode_reader), label: 'Scan'),
+        BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'Inventory'),
+        BottomNavigationBarItem(icon: Icon(Icons.list), label: 'List'),
       ],
       selectedItemColor: Theme.of(context).primaryColor,
       unselectedItemColor: Colors.grey,
