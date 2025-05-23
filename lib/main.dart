@@ -116,16 +116,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
               ),
         );
       } else if (response.statusCode == 404) {
-        await showDialog(
+        final bool? shouldAdd = await showDialog(
           context: context,
           builder:
               (_) => AlertDialog(
                 title: const Text('Item Not Found'),
-                content: Text('Barcode: $code not found in inventory.'),
+                content: Text('Barcode: $code not found in inventory. Would you like to add it?'),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Yes'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('No'),
                   ),
                 ],
               ),
