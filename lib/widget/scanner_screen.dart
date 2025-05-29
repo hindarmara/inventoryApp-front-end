@@ -76,6 +76,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Future<void> _showScanResult(BuildContext context, String code) async {
     try {
       final resp = await InventoryApi().getItem(code);
+
       if (resp.statusCode == 200) {
         final data = resp.data;
         final name = data['name'];
@@ -95,53 +96,54 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 ],
               ),
         );
-      } on DioError catch (e) {
-        if (e.response?.statusCode == 404) {
-          final shouldAdd = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('Item Not Found'),
-              content: Text('Barcode $code not found. Add it?'),
-              actions: [
-                TextButton(
+      } else if (resp.statusCode == 404) {
+        final shouldAdd = await showDialog<bool>(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: const Text('Item Not Found'),
+                content: Text('Barcode $code not found. Add it?'),
+                actions: [
+                  TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('No')),
-                TextButton(
+                    child: const Text('No'),
+                  ),
+                  TextButton(
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Yes')),
-              ],
-            ),
-          );
-          if (shouldAdd == true) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AddInventoryPage(sku: code)),
-            );
-          }
-        } else {
-          await showDialog(
-            context: context,
-            builder:
-                (_) => AlertDialog(
-                  title: const Text('Error'),
-                  content: Text('Failed to fetch data for barcode: $code\n'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
+                    child: const Text('Yes'),
+                  ),
+                ],
+              ),
+        );
+        if (shouldAdd == true) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddInventoryPage(sku: code)),
           );
         }
+      } else {
+        await showDialog(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: const Text('Error'),
+                content: Text('Unexpected status ${resp.statusCode} for $code'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
       }
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       await showDialog(
         context: context,
         builder:
             (_) => AlertDialog(
-              title: const Text('Error'),
-              content: Text('Failed to fetch data for barcode: $code\n$e'),
+              title: const Text('Network Error'),
+              content: Text(e.message ?? e.toString()),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),

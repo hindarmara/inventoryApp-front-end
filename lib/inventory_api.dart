@@ -86,7 +86,7 @@ class InventoryApi {
     required String name,
     required int quantity,
   }) {
-    print('➡️ POST /inventory  {sku: $sku, name: $name, qty: $quantity}');
+    print('POST /inventory  {sku: $sku, name: $name, qty: $quantity}');
     return _dio.post(
       '/inventory',
       data: {'sku': sku, 'name': name, 'quantity': quantity},
@@ -98,7 +98,7 @@ class InventoryApi {
     required String name,
     required int quantity,
   }) {
-    print('➡️ PUT /inventory/$skuId  {name: $name, qty: $quantity}');
+    print('PUT /inventory/$skuId  {name: $name, qty: $quantity}');
     return _dio.put(
       '/inventory/$skuId',
       data: {'name': name, 'quantity': quantity},
@@ -106,7 +106,7 @@ class InventoryApi {
   }
 
   Future<Response> deleteItem(String skuId) {
-    print('➡️ DELETE /inventory/$skuId');
+    print('DELETE /inventory/$skuId');
     return _dio.delete('/inventory/$skuId');
   }
 }
