@@ -62,11 +62,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
   // Step 1: Mock barcode data
   /*
   final Map<String, Map<String, dynamic>> mockInventory = {
-    '8809294662039': {'name': 'Korean Rice', 'quantity': 5},
+    '8809294662039': {'name': 'Korean Rice', 'quantity': 5},   
     '060383054458': {'name': 'Orange Juice', 'quantity': 12},
   };
 
   */
+  @override
+  void initState() {
+    super.initState();
+    scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+    );
+  }
 
   @override
   void dispose() {
@@ -77,16 +84,40 @@ class _ScannerScreenState extends State<ScannerScreen> {
   void _toggleScanner() {
     setState(() {
       isScannerActive = !isScannerActive;
-      if (isScannerActive) {
-        scannerController = MobileScannerController(
-          detectionSpeed: DetectionSpeed.noDuplicates,
-        );
-      } else {
-        scannerController?.dispose();
-        scannerController = null;
-      }
+      print('[DEBUG] Scanner toggled: $isScannerActive');
     });
   }
+
+  void _handleBarcodeDetection(BarcodeCapture capture) async {
+  if (!isScannerActive) {
+    print('[DEBUG] Scanning is currently disabled');
+    return;
+  }
+
+  final barcodes = capture.barcodes;
+  if (barcodes.isEmpty) {
+    print('[DEBUG] No barcodes detected');
+    return;
+  }
+
+  final String code = barcodes.first.rawValue ?? 'Unknown';
+
+  if (code != scanResult) {
+    print('[DEBUG] Barcode detected: $code');
+
+    setState(() {
+      scanResult = code;
+      isScannerActive = false;
+    });
+
+    await _showScanResult(context, code);
+
+
+  } else {
+    print('[DEBUG] Duplicate barcode ignored: $code');
+  }
+}
+
 
   // Step 2: Show popup result
   Future<void> _showScanResult(BuildContext context, String code) async {
@@ -159,47 +190,27 @@ class _ScannerScreenState extends State<ScannerScreen> {
         children: [
           const Text('Scan a barcode / QR code'),
           const SizedBox(height: 20),
-          if (isScannerActive) ...[
-            SizedBox(
-              height: 300,
-              width: 300,
-              child: MobileScanner(
-                controller: scannerController!,
-                onDetect: (capture) async {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  if (barcodes.isNotEmpty) {
-                    final String code = barcodes.first.rawValue ?? 'Unknown';
-                    if (code != scanResult) {
-                      setState(() {
-                        scanResult = code;
-                      });
-
-                      await scannerController?.stop(); // Pause scanning
-                      await _showScanResult(
-                        context,
-                        code,
-                      ); // Wait for dialog to close
-                      await scannerController?.start(); // Resume scanning
-                    }
-                  }
-                },
-              ),
+          SizedBox(
+            height: 300,
+            width: 300,
+            child: MobileScanner(
+              controller: scannerController!,
+              onDetect:
+                  _handleBarcodeDetection,
             ),
-            if (scanResult != null)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text('Last scanned: $scanResult'),
-              ),
-            ElevatedButton(
-              onPressed: _toggleScanner,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Stop Scanner'),
+          ),
+          if (scanResult != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('Last scanned: $scanResult'),
             ),
-          ] else
-            ElevatedButton(
-              onPressed: _toggleScanner,
-              child: const Text('Start Scanner'),
+          ElevatedButton(
+            onPressed: _toggleScanner,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isScannerActive ? Colors.red : Colors.green,
             ),
+            child: Text(isScannerActive ? 'Stop Scanning' : 'Start Scanning'),
+          ),
         ],
       ),
     );
