@@ -17,6 +17,9 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
   late final TextEditingController _skuController;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _qtyController = TextEditingController();
+  final TextEditingController _reorderController = TextEditingController(
+    text: '0',
+  );
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
     _skuController.dispose();
     _nameController.dispose();
     _qtyController.dispose();
+    _reorderController.dispose();
     super.dispose();
   }
 
@@ -38,12 +42,15 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
     final sku = _skuController.text;
     final name = _nameController.text;
     final qty = int.parse(_qtyController.text);
+    final reorderLevel = int.parse(_reorderController.text);
 
     try {
       final resp = await InventoryApi().addItem(
         sku: sku,
         name: name,
         quantity: qty,
+        // include reorder_level in payload
+        reorderLevel: reorderLevel,
       );
 
       if (resp.statusCode == 201 || resp.statusCode == 200) {
@@ -114,6 +121,16 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
                 keyboardType: TextInputType.number,
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Enter quantity';
+                  if (int.tryParse(v) == null) return 'Must be a number';
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _reorderController,
+                decoration: const InputDecoration(labelText: 'Reorder Level'),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Enter reorder level';
                   if (int.tryParse(v) == null) return 'Must be a number';
                   return null;
                 },

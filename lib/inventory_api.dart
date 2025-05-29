@@ -81,15 +81,29 @@ class InventoryApi {
     return _dio.get('/inventory');
   }
 
+  /// Route to get list of all items with quantity less than reorder level
+  Future<Response> getLowStockItems() {
+    print('➡️ GET /inventory/low-stock');
+    return _dio.get('/inventory/low-stock');
+  }
+
   Future<Response> addItem({
     required String sku,
     required String name,
     required int quantity,
+    required int reorderLevel,
   }) {
-    print('POST /inventory  {sku: $sku, name: $name, qty: $quantity}');
+    print(
+      '➡️ POST /inventory {sku: $sku, name: $name, qty: $quantity, reorderLevel: $reorderLevel}',
+    );
     return _dio.post(
       '/inventory',
-      data: {'sku': sku, 'name': name, 'quantity': quantity},
+      data: {
+        'sku': sku,
+        'name': name,
+        'quantity': quantity,
+        'reorder_level': reorderLevel,
+      },
     );
   }
 
@@ -97,11 +111,14 @@ class InventoryApi {
     required String skuId,
     required String name,
     required int quantity,
+    required int reorderLevel,
   }) {
-    print('PUT /inventory/$skuId  {name: $name, qty: $quantity}');
+    print(
+      '➡️ PUT /inventory/$skuId {name: $name, qty: $quantity, reorderLevel: $reorderLevel}',
+    );
     return _dio.put(
       '/inventory/$skuId',
-      data: {'name': name, 'quantity': quantity},
+      data: {'name': name, 'quantity': quantity, 'reorder_level': reorderLevel},
     );
   }
 
