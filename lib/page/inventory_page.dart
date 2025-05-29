@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../inventory_api.dart';
 
 class InventoryItem {
@@ -68,42 +69,172 @@ class _InventoryPageState extends State<InventoryPage> {
     if (_items.isEmpty) {
       return const Center(child: Text('No items in inventory.'));
     }
-    // wrap in SafeArea (or add top padding) to avoid overflow
     return SafeArea(
-      top: true,
-      bottom: false,
       child: ReorderableListView.builder(
         onReorder: _onReorder,
         itemCount: _items.length,
         itemBuilder: (context, index) {
           final item = _items[index];
-          return ListTile(
+          return Dismissible(
             key: ValueKey(item.sku),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
+            direction: DismissDirection.horizontal,
+            background: Container(
+              alignment: Alignment.centerLeft,
+              color: Colors.blue,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: const Icon(Icons.edit, color: Colors.white),
             ),
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(4),
+            secondaryBackground: Container(
+              alignment: Alignment.centerRight,
+              color: Colors.red,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            confirmDismiss: (direction) async {
+              // DELETE
+              if (direction == DismissDirection.endToStart) {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (_) => AlertDialog(
+                        title: const Text('Delete Item'),
+                        content: Text('Remove "${item.name}" from inventory?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                );
+                if (confirmed == true) {
+                  final resp = await InventoryApi().deleteItem(item.sku);
+                  if (resp.statusCode == 200) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${item.name} deleted')),
+                    );
+                    return true; // allow Dismissible to remove
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Delete failed (${resp.statusCode})'),
+                      ),
+                    );
+                  }
+                }
+                return false;
+              }
+
+              // UPDATE
+              if (direction == DismissDirection.startToEnd) {
+                final result = await showDialog<InventoryItem>(
+                  context: context,
+                  builder: (_) {
+                    final nameCtrl = TextEditingController(text: item.name);
+                    final qtyCtrl = TextEditingController(
+                      text: item.quantity.toString(),
+                    );
+                    return AlertDialog(
+                      title: const Text('Update Item'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: nameCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Name',
+                            ),
+                          ),
+                          TextField(
+                            controller: qtyCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Quantity',
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            final updated = InventoryItem(
+                              sku: item.sku,
+                              name: nameCtrl.text,
+                              quantity:
+                                  int.tryParse(qtyCtrl.text) ?? item.quantity,
+                            );
+                            Navigator.pop(context, updated);
+                          },
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (result != null) {
+                  final resp = await InventoryApi().updateItem(
+                    skuId: result.sku,
+                    name: result.name,
+                    quantity: result.quantity,
+                  );
+                  if (resp.statusCode == 200) {
+                    setState(() => _items[index] = result);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text('${result.name} updated')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Update failed (${resp.statusCode})'),
+                      ),
+                    );
+                  }
+                }
+                return false; // don’t dismiss on update
+              }
+
+              return false;
+            },
+            onDismissed: (direction) {
+              // only called for delete when confirmDismiss returned true
+              setState(() => _items.removeAt(index));
+            },
+            child: ListTile(
+              key: ValueKey(item.sku),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
               ),
-              child: Icon(
-                Icons.inventory_2,
-                size: 28,
-                color: Colors.grey.shade700,
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Icon(
+                  Icons.inventory_2,
+                  size: 28,
+                  color: Colors.grey.shade700,
+                ),
               ),
-            ),
-            title: Text(
-              item.name,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text('Qty: ${item.quantity}'),
-            trailing: ReorderableDragStartListener(
-              index: index,
-              child: const Icon(Icons.drag_handle, color: Colors.grey),
+              title: Text(
+                item.name,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text('Qty: ${item.quantity}'),
+              trailing: ReorderableDragStartListener(
+                index: index,
+                child: const Icon(Icons.drag_handle, color: Colors.grey),
+              ),
             ),
           );
         },
