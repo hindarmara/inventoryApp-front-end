@@ -2,9 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'widget/bottom_navbar.dart'; // ← import your BottomNavBar
 
 void main() {
-  runApp(MaterialApp(home: Scaffold(body: Container(child: ScannerScreen()))));
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Inventory Scanner',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
+
+  // map each tab to a widget
+  final List<Widget> _pages = [
+    const ScannerScreen(),
+    const Center(child: Text('Search')), // placeholder
+    const Center(child: Text('Profile')), // placeholder
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (idx) => setState(() => _currentIndex = idx),
+      ),
+    );
+  }
 }
 
 class ScannerScreen extends StatefulWidget {
