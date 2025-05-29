@@ -95,35 +95,45 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 ],
               ),
         );
-      } else if (resp.statusCode == 404) {
-        final bool? shouldAdd = await showDialog<bool>(
-          context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text('Item Not Found'),
-                content: Text(
-                  'Barcode: $code not found in inventory. Would you like to add it?',
-                ),
-                actions: [
-                  TextButton(
+      } on DioError catch (e) {
+        if (e.response?.statusCode == 404) {
+          final shouldAdd = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Item Not Found'),
+              content: Text('Barcode $code not found. Add it?'),
+              actions: [
+                TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('No'),
-                  ),
-                  TextButton(
+                    child: const Text('No')),
+                TextButton(
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Yes'),
-                  ),
-                ],
-              ),
-        );
-        if (shouldAdd == true) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AddInventoryPage(sku: code)),
+                    child: const Text('Yes')),
+              ],
+            ),
+          );
+          if (shouldAdd == true) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AddInventoryPage(sku: code)),
+            );
+          }
+        } else {
+          await showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  title: const Text('Error'),
+                  content: Text('Failed to fetch data for barcode: $code\n'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
           );
         }
-      } else {
-        throw Exception('Unexpected error: ${resp.statusCode}');
       }
     } on DioError catch (e) {
       await showDialog(

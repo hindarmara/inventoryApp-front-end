@@ -27,6 +27,8 @@ class InventoryApi {
               baseUrl: _baseHost,
               connectTimeout: const Duration(milliseconds: 5000),
               receiveTimeout: const Duration(milliseconds: 3000),
+              // Allow status codes < 500 (so 404 returns a Response instead of throwing)
+              validateStatus: (status) => status != null && status < 500,
             ),
           ) {
     // 1) built-in request/response logger
