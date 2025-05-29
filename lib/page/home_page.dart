@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widget/bottom_navbar.dart';
 import '../widget/scanner_screen.dart';
 import 'inventory_page.dart';
+import 'low_stock_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +17,7 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     const ScannerScreen(),
     const InventoryPage(), // replace Center(Text('Search'))
-    const Center(child: Text('Profile')), // placeholder
+    const LowStockPage(), // placeholder
   ];
 
   @override

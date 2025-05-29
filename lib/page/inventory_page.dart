@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import '../inventory_api.dart';
 
 class InventoryItem {
   final String sku;
   final String name;
   final int quantity;
+  final int reorderLevel;
+
   InventoryItem({
     required this.sku,
     required this.name,
     required this.quantity,
+    required this.reorderLevel,
   });
+
   factory InventoryItem.fromJson(Map<String, dynamic> json) {
     return InventoryItem(
       sku: json['sku']?.toString() ?? '',
@@ -19,12 +22,16 @@ class InventoryItem {
           json['quantity'] is int
               ? json['quantity'] as int
               : int.tryParse(json['quantity'].toString()) ?? 0,
+      reorderLevel:
+          json['reorder_level'] is int
+              ? json['reorder_level'] as int
+              : int.tryParse(json['reorder_level'].toString()) ?? 0,
     );
   }
 }
 
 class InventoryPage extends StatefulWidget {
-  const InventoryPage({Key? key}) : super(key: key);
+  const InventoryPage({super.key});
   @override
   State<InventoryPage> createState() => _InventoryPageState();
 }
@@ -117,7 +124,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('${item.name} deleted')),
                     );
-                    return true; // allow Dismissible to remove
+                    return true;
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -138,6 +145,9 @@ class _InventoryPageState extends State<InventoryPage> {
                     final qtyCtrl = TextEditingController(
                       text: item.quantity.toString(),
                     );
+                    final reorderCtrl = TextEditingController(
+                      text: item.reorderLevel.toString(),
+                    );
                     return AlertDialog(
                       title: const Text('Update Item'),
                       content: Column(
@@ -156,6 +166,13 @@ class _InventoryPageState extends State<InventoryPage> {
                             ),
                             keyboardType: TextInputType.number,
                           ),
+                          TextField(
+                            controller: reorderCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Reorder Level',
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
                         ],
                       ),
                       actions: [
@@ -170,6 +187,9 @@ class _InventoryPageState extends State<InventoryPage> {
                               name: nameCtrl.text,
                               quantity:
                                   int.tryParse(qtyCtrl.text) ?? item.quantity,
+                              reorderLevel:
+                                  int.tryParse(reorderCtrl.text) ??
+                                  item.reorderLevel,
                             );
                             Navigator.pop(context, updated);
                           },
@@ -184,11 +204,12 @@ class _InventoryPageState extends State<InventoryPage> {
                     skuId: result.sku,
                     name: result.name,
                     quantity: result.quantity,
+                    reorderLevel: result.reorderLevel,
                   );
                   if (resp.statusCode == 200) {
                     setState(() => _items[index] = result);
                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(content: Text('${result.name} updated')),
+                      SnackBar(content: Text('${result.name} updated')),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -198,13 +219,11 @@ class _InventoryPageState extends State<InventoryPage> {
                     );
                   }
                 }
-                return false; // don’t dismiss on update
+                return false; // do not dismiss
               }
-
               return false;
             },
             onDismissed: (direction) {
-              // only called for delete when confirmDismiss returned true
               setState(() => _items.removeAt(index));
             },
             child: ListTile(
@@ -230,7 +249,9 @@ class _InventoryPageState extends State<InventoryPage> {
                 item.name,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text('Qty: ${item.quantity}'),
+              subtitle: Text(
+                'Qty: ${item.quantity} • Reorder: ${item.reorderLevel}',
+              ),
               trailing: ReorderableDragStartListener(
                 index: index,
                 child: const Icon(Icons.drag_handle, color: Colors.grey),
