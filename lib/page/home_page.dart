@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widget/bottom_navbar.dart';
 import '../widget/scanner_screen.dart';
+import 'inventory_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,7 +15,7 @@ class _HomePageState extends State<HomePage> {
   // map each tab to a widget
   final List<Widget> _pages = [
     const ScannerScreen(),
-    const Center(child: Text('Search')), // placeholder
+    const InventoryPage(), // replace Center(Text('Search'))
     const Center(child: Text('Profile')), // placeholder
   ];
 
@@ -29,4 +30,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-

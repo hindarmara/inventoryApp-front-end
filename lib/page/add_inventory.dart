@@ -1,4 +1,6 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../inventory_api.dart';
 
 /// Page to add a new inventory item.
 class AddInventoryPage extends StatefulWidget {
@@ -30,13 +32,58 @@ class _AddInventoryPageState extends State<AddInventoryPage> {
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      final sku = _skuController.text;
-      final name = _nameController.text;
-      final qty = int.parse(_qtyController.text);
-      // TODO: send `sku`, `name`, `qty` to your API/backend
-      Navigator.pop(context);
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final sku = _skuController.text;
+    final name = _nameController.text;
+    final qty = int.parse(_qtyController.text);
+
+    try {
+      final resp = await InventoryApi().addItem(
+        sku: sku,
+        name: name,
+        quantity: qty,
+      );
+
+      if (resp.statusCode == 201 || resp.statusCode == 200) {
+        // success → show a Snackbar then pop
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Item added successfully')),
+        );
+        Navigator.pop(context, true);
+      } else {
+        // server‐side validation error, etc.
+        await showDialog(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: const Text('Error'),
+                content: Text('Failed to add item: ${resp.statusCode}'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+      }
+    } on DioException catch (e) {
+      await showDialog(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              title: const Text('Network Error'),
+              content: Text(e.message ?? 'Unknown network error'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+      );
     }
   }
 
